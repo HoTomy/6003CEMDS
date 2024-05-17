@@ -7,74 +7,83 @@ import { basicAuth } from "../controllers/auth";
 const router = new Router({prefix: '/api/v1/dogs'});
 
 
-// New getAll
-const getAll = async (ctx: RouterContext, next: any)=> {
-  let dogs = await model.getAll();
-  if (dogs.length) {
-    ctx.body = dogs;
-  } else {
-    ctx.body = {}
+import { ObjectId, MongoClient } from 'mongodb';
+
+const uri = 'mongodb+srv://tomyho:1Asdflkj@ds.o9ppmp9.mongodb.net/?retryWrites=true&w=majority&appName=DS';
+
+const client = new MongoClient(uri);
+
+export const getById = async (id: any) => {
+  try {
+    await client.connect();
+    const database = client.db('DS');
+    const collection = database.collection('Dog');
+    const data = await collection.findOne({ _id: new ObjectId(id) });
+    return data;
+  } catch (err: any) {
+    console.error(err);
+    throw 'Error retrieving data';
+  } finally {
+    await client.close();
   }
-  await next();
-}
+};
 
-const getById = async (ctx: RouterContext, next: any) => {
-  let id = ctx.params.id;
-  let dog = await model.getById(id);
-  if (dog.length) {
-    ctx.body = dog[0];
-  } else {
-    ctx.status = 404;
+export const getAll = async () => {
+  try {
+    await client.connect();
+    const database = client.db('DS');
+    const collection = database.collection('Dog');
+    const data = await collection.find({}).toArray();
+    return data;
+  } catch (err: any) {
+    console.error(err);
+    throw 'Error retrieving data';
+  } finally {
+    await client.close();
   }
-  await next();
-}
+};
 
-const createDogs = async (ctx: RouterContext, next: any) => {
-  const body = ctx.request.body;
-  let result = await model.add(body);
-  if (result.status == 201) {
-    ctx.status = 201;
-    ctx.body = body;
-  } else {
-    ctx.status = 500;
-    ctx.body = {err: "insert data failed"};
+export const add = async (dog: any) => {
+  try {
+    await client.connect();
+    const database = client.db('DS');
+    const collection = database.collection('Dog');
+    const result = await collection.insertOne(dog);
+    return { status: 201 };
+  } catch (err: any) {
+    console.error(err);
+    throw 'Error adding record';
+  } finally {
+    await client.close();
   }
-  await next();
-}
+};
 
-const updateDogs = async (ctx: RouterContext, next: any) => {
-    let id = ctx.params.id;
-    let context: any = ctx.request.body;
-    let update_dogs = await model.updateById(context,id);
-    let dog = await model.getById(id);
-    ctx.body = dog;
-    ctx.status = 200;  
-    if (dog.length){
-        ctx.body = dog;
-    } else {
-        ctx.body = {}
-    }
-    await next();
-}
+export const updateById = async (dog: any, id: any) => {
+  try {
+    await client.connect();
+    const database = client.db('DS');
+    const collection = database.collection('Dog');
+    const result = await collection.updateOne({ _id: new ObjectId(id) }, { $set: dog });
+    return { status: 201 };
+  } catch (err: any) {
+    console.error(err);
+    throw 'Error updating record';
+  } finally {
+    await client.close();
+  }
+};
 
-const deleteDogs = async (ctx: RouterContext, next: any) => {
-    let id = ctx.params.id;
-    await model.deleteById(id);
-    let dog = await model.getById(id);
-    ctx.body = dog;
-    ctx.status = 200;  
-    if (dog.length){
-    } else {
-        ctx.body = `id:${id} deleted success`
-    }
-    await next();
-}
-
-router.get('/', getAll);
-router.get('/:id([0-9]{1,})', getById);
-router.post('/',basicAuth, bodyParser(), createDogs);
-router.put('/:id([0-9]{1,})',basicAuth,bodyParser(),updateDogs);
-router.del('/:id([0-9]{1,})',basicAuth, deleteDogs);
-
-// Finally, define the exported object when import from other scripts.
-export { router };
+export const deleteById = async (id: any) => {
+  try {
+    await client.connect();
+    const database = client.db('DS');
+    const collection = database.collection('Dog');
+    const result = await collection.deleteOne({ _id: new ObjectId(id) });
+    return { status: 201 };
+  } catch (err: any) {
+    console.error(err);
+    throw 'Error deleting record';
+  } finally {
+    await client.close();
+  }
+};
